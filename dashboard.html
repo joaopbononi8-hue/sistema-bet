@@ -22,6 +22,9 @@
             background: #1a7f37;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h1 {
@@ -29,6 +32,41 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .update-info {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .btn-header {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-header:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-header.primary {
+            background: #fff;
+            color: #1a7f37;
+        }
+
+        .btn-header.primary:hover {
+            background: #f0f0f0;
         }
 
         .search-bar {
@@ -50,6 +88,32 @@
         .search-bar input:focus {
             outline: none;
             border-color: #1a7f37;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #1a7f37;
+        }
+
+        .loading.error {
+            color: #dc2626;
+        }
+
+        .loading-spinner {
+            border: 4px solid #444;
+            border-top: 4px solid #1a7f37;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .container {
@@ -101,6 +165,41 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+
+        .empty-state {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            color: #1a7f37;
+            margin-bottom: 20px;
+        }
+
+        .empty-state p {
+            color: #aaa;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .btn-large {
+            background: #1a7f37;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-large:hover {
+            background: #22a349;
+            transform: translateY(-2px);
         }
 
         .match-card {
@@ -188,6 +287,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .confidence {
@@ -350,6 +450,42 @@
             padding: 40px 20px;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #1a7f37;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
         @media (max-width: 1400px) {
             .container {
                 grid-template-columns: 200px 1fr 300px;
@@ -380,6 +516,14 @@
 <body>
     <div class="header">
         <h1>⚽ Sistema de Apostas Esportivas</h1>
+        <div class="header-buttons">
+            <div class="update-info" id="updateInfo">
+                Aguardando dados...
+            </div>
+            <button class="btn-header primary" onclick="updateData()">
+                🔄 Buscar Jogos Reais
+            </button>
+        </div>
     </div>
 
     <div class="search-bar">
@@ -392,187 +536,47 @@
             <div class="filter-group">
                 <h3>🏆 LIGAS</h3>
                 <div class="filter-item">
-                    <input type="checkbox" id="premier" checked>
+                    <input type="checkbox" id="premier" checked onchange="filterMatches()">
                     <label for="premier">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="brasileirao" checked>
+                    <input type="checkbox" id="brasileirao" checked onchange="filterMatches()">
                     <label for="brasileirao">🇧🇷 Brasileirão</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="laliga" checked>
+                    <input type="checkbox" id="laliga" checked onchange="filterMatches()">
                     <label for="laliga">🇪🇸 La Liga</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="bundesliga">
+                    <input type="checkbox" id="bundesliga" checked onchange="filterMatches()">
                     <label for="bundesliga">🇩🇪 Bundesliga</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="seriea">
+                    <input type="checkbox" id="seriea" checked onchange="filterMatches()">
                     <label for="seriea">🇮🇹 Serie A</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="ligue1">
+                    <input type="checkbox" id="ligue1" checked onchange="filterMatches()">
                     <label for="ligue1">🇫🇷 Ligue 1</label>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <h3>📅 PERÍODO</h3>
-                <div class="filter-item">
-                    <input type="radio" name="period" id="today" checked>
-                    <label for="today">Hoje</label>
-                </div>
-                <div class="filter-item">
-                    <input type="radio" name="period" id="tomorrow">
-                    <label for="tomorrow">Amanhã</label>
-                </div>
-                <div class="filter-item">
-                    <input type="radio" name="period" id="week">
-                    <label for="week">Esta semana</label>
                 </div>
             </div>
         </div>
 
         <!-- MAIN CONTENT -->
         <div class="main-content" id="matchesContainer">
-            <!-- Match Card 1 -->
-            <div class="match-card">
-                <div class="match-header">
-                    <div class="league-info">
-                        <span>🏴󠁧󠁢󠁥󠁮󠁧󠁿 PREMIER LEAGUE</span>
-                    </div>
-                    <div class="match-time">16:00</div>
-                </div>
-                <div class="teams">Manchester City vs Liverpool</div>
-                
-                <div class="bet-options">
-                    <div class="bet-category">
-                        <h4>🚩 ESCANTEIOS</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Man City vs Liverpool" data-bet="Over 9.5 Escanteios" data-odd="1.65" data-conf="92" data-avg="12.4" data-margin="2.9">
-                            <div class="bet-info">
-                                <span>Over 9.5</span>
-                                <span class="confidence high">✅ 92%</span>
-                                <span class="bet-stats">Média: 12.4 | Margem: 2.9</span>
-                            </div>
-                            <div class="odd">1.65</div>
-                        </div>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Man City vs Liverpool" data-bet="Under 14.5 Escanteios" data-odd="1.55" data-conf="78" data-avg="12.4" data-margin="2.1">
-                            <div class="bet-info">
-                                <span>Under 14.5</span>
-                                <span class="confidence medium">⚠️ 78%</span>
-                                <span class="bet-stats">Média: 12.4 | Margem: 2.1</span>
-                            </div>
-                            <div class="odd">1.55</div>
-                        </div>
-                    </div>
-
-                    <div class="bet-category">
-                        <h4>🎯 CHUTES NO GOL</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Man City vs Liverpool" data-bet="Over 14.5 Chutes no Gol" data-odd="1.70" data-conf="88" data-avg="18.3" data-margin="3.8">
-                            <div class="bet-info">
-                                <span>Over 14.5</span>
-                                <span class="confidence high">✅ 88%</span>
-                                <span class="bet-stats">Média: 18.3 | Margem: 3.8</span>
-                            </div>
-                            <div class="odd">1.70</div>
-                        </div>
-                    </div>
-
-                    <div class="bet-category">
-                        <h4>🟨 CARTÕES</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Man City vs Liverpool" data-bet="Over 3.5 Cartões" data-odd="1.75" data-conf="85" data-avg="4.2" data-margin="0.7">
-                            <div class="bet-info">
-                                <span>Over 3.5</span>
-                                <span class="confidence high">✅ 85%</span>
-                                <span class="bet-stats">Média: 4.2 | Margem: 0.7</span>
-                            </div>
-                            <div class="odd">1.75</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Match Card 2 -->
-            <div class="match-card">
-                <div class="match-header">
-                    <div class="league-info">
-                        <span>🇧🇷 BRASILEIRÃO</span>
-                    </div>
-                    <div class="match-time">18:00</div>
-                </div>
-                <div class="teams">Flamengo vs Palmeiras</div>
-                
-                <div class="bet-options">
-                    <div class="bet-category">
-                        <h4>🚩 ESCANTEIOS</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Flamengo vs Palmeiras" data-bet="Over 6.5 Escanteios" data-odd="1.80" data-conf="90" data-avg="8.7" data-margin="2.2">
-                            <div class="bet-info">
-                                <span>Over 6.5</span>
-                                <span class="confidence high">✅ 90%</span>
-                                <span class="bet-stats">Média: 8.7 | Margem: 2.2</span>
-                            </div>
-                            <div class="odd">1.80</div>
-                        </div>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Flamengo vs Palmeiras" data-bet="Under 11.5 Escanteios" data-odd="1.65" data-conf="82" data-avg="8.7" data-margin="2.8">
-                            <div class="bet-info">
-                                <span>Under 11.5</span>
-                                <span class="confidence high">✅ 82%</span>
-                                <span class="bet-stats">Média: 8.7 | Margem: 2.8</span>
-                            </div>
-                            <div class="odd">1.65</div>
-                        </div>
-                    </div>
-
-                    <div class="bet-category">
-                        <h4>🟨 CARTÕES</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Flamengo vs Palmeiras" data-bet="Over 4.5 Cartões" data-odd="1.70" data-conf="87" data-avg="5.8" data-margin="1.3">
-                            <div class="bet-info">
-                                <span>Over 4.5</span>
-                                <span class="confidence high">✅ 87%</span>
-                                <span class="bet-stats">Média: 5.8 | Margem: 1.3</span>
-                            </div>
-                            <div class="odd">1.70</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Match Card 3 -->
-            <div class="match-card">
-                <div class="match-header">
-                    <div class="league-info">
-                        <span>🇩🇪 BUNDESLIGA</span>
-                    </div>
-                    <div class="match-time">17:30</div>
-                </div>
-                <div class="teams">Bayern vs Dortmund</div>
-                
-                <div class="bet-options">
-                    <div class="bet-category">
-                        <h4>⚽ GOLS</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Bayern vs Dortmund" data-bet="Over 2.5 Gols" data-odd="1.55" data-conf="91" data-avg="3.8" data-margin="1.3">
-                            <div class="bet-info">
-                                <span>Over 2.5</span>
-                                <span class="confidence high">✅ 91%</span>
-                                <span class="bet-stats">Média: 3.8 | Margem: 1.3</span>
-                            </div>
-                            <div class="odd">1.55</div>
-                        </div>
-                    </div>
-
-                    <div class="bet-category">
-                        <h4>🚩 ESCANTEIOS</h4>
-                        <div class="bet-option" onclick="addToTicket(this)" data-match="Bayern vs Dortmund" data-bet="Over 8.5 Escanteios" data-odd="1.75" data-conf="86" data-avg="11.2" data-margin="2.7">
-                            <div class="bet-info">
-                                <span>Over 8.5</span>
-                                <span class="confidence high">✅ 86%</span>
-                                <span class="bet-stats">Média: 11.2 | Margem: 2.7</span>
-                            </div>
-                            <div class="odd">1.75</div>
-                        </div>
-                    </div>
-                </div>
+            <div class="empty-state">
+                <h2>🎯 Bem-vindo ao Sistema de Apostas!</h2>
+                <p>
+                    Para começar, clique no botão <strong>"Buscar Jogos Reais"</strong> acima.<br>
+                    O sistema vai importar jogos finalizados de hoje com estatísticas reais da API-Football.
+                </p>
+                <button class="btn-large" onclick="updateData()">
+                    🚀 Buscar Jogos Agora
+                </button>
+                <p style="margin-top: 20px; font-size: 14px;">
+                    💡 Você tem 100 requisições grátis por dia na API-Football<br>
+                    Cada atualização usa cerca de 10-20 requisições
+                </p>
             </div>
         </div>
 
@@ -615,8 +619,179 @@
         </div>
     </div>
 
+    <!-- MODAL DE LOADING -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <h2>🔄 Buscando Jogos...</h2>
+            <div class="loading-spinner"></div>
+            <p id="loadingMessage">Conectando com API-Football...</p>
+        </div>
+    </div>
+
     <script>
         let ticket = [];
+        let allMatches = [];
+
+        async function updateData() {
+            const modal = document.getElementById('loadingModal');
+            const message = document.getElementById('loadingMessage');
+            modal.classList.add('active');
+            
+            try {
+                message.textContent = 'Buscando jogos finalizados de hoje...';
+                
+                const response = await fetch('/api/update', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                message.textContent = `✅ ${data.imported} jogos importados!`;
+                
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                    loadMatches();
+                }, 2000);
+                
+            } catch (error) {
+                message.textContent = `❌ Erro: ${error.message}`;
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                }, 3000);
+                console.error('Erro:', error);
+            }
+        }
+
+        async function loadMatches() {
+            const container = document.getElementById('matchesContainer');
+            container.innerHTML = '<div class="loading">⚽ Carregando jogos do banco de dados...<div class="loading-spinner"></div></div>';
+
+            try {
+                const response = await fetch('/api/matches');
+                const matches = await response.json();
+                allMatches = matches;
+                
+                if (matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h2>📊 Nenhum jogo no banco ainda</h2>
+                            <p>Clique em "Buscar Jogos Reais" para importar dados da API-Football</p>
+                            <button class="btn-large" onclick="updateData()">
+                                🚀 Buscar Jogos Agora
+                            </button>
+                        </div>
+                    `;
+                    document.getElementById('updateInfo').textContent = 'Nenhum dado ainda';
+                    return;
+                }
+                
+                displayMatches(matches);
+                document.getElementById('updateInfo').textContent = `Última atualização: ${new Date().toLocaleTimeString('pt-BR')}`;
+                
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="loading error">
+                        ❌ Erro ao carregar jogos!<br>
+                        <button class="btn-large" onclick="loadMatches()" style="margin-top: 20px;">
+                            🔄 Tentar Novamente
+                        </button>
+                    </div>
+                `;
+                console.error('Erro:', error);
+            }
+        }
+
+        function displayMatches(matches) {
+            const container = document.getElementById('matchesContainer');
+            
+            container.innerHTML = matches.map(match => `
+                <div class="match-card" data-league="${match.league}">
+                    <div class="match-header">
+                        <div class="league-info">
+                            <span>${match.league}</span>
+                        </div>
+                        <div class="match-time">${match.time}</div>
+                    </div>
+                    <div class="teams">${match.home_team} vs ${match.away_team}</div>
+                    
+                    <div class="bet-options">
+                        ${match.stats.corners && match.stats.corners.avg > 0 ? `
+                        <div class="bet-category">
+                            <h4>🚩 ESCANTEIOS</h4>
+                            <div class="bet-option" onclick="addToTicket(this)" 
+                                 data-match="${match.home_team} vs ${match.away_team}" 
+                                 data-bet="Over ${match.stats.corners.over_line} Escanteios" 
+                                 data-odd="${match.stats.corners.over_odd}" 
+                                 data-conf="${match.stats.corners.over_conf}" 
+                                 data-avg="${match.stats.corners.avg}" 
+                                 data-margin="${(match.stats.corners.avg - match.stats.corners.over_line).toFixed(1)}">
+                                <div class="bet-info">
+                                    <span>Over ${match.stats.corners.over_line}</span>
+                                    <span class="confidence ${match.stats.corners.over_conf >= 85 ? 'high' : 'medium'}">
+                                        ${match.stats.corners.over_conf >= 85 ? '✅' : '⚠️'} ${match.stats.corners.over_conf}%
+                                    </span>
+                                    <span class="bet-stats">Média: ${match.stats.corners.avg.toFixed(1)} | Margem: ${(match.stats.corners.avg - match.stats.corners.over_line).toFixed(1)}</span>
+                                </div>
+                                <div class="odd">${match.stats.corners.over_odd}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${match.stats.shots_on_target && match.stats.shots_on_target.avg > 0 ? `
+                        <div class="bet-category">
+                            <h4>🎯 CHUTES NO GOL</h4>
+                            <div class="bet-option" onclick="addToTicket(this)" 
+                                 data-match="${match.home_team} vs ${match.away_team}" 
+                                 data-bet="Over ${match.stats.shots_on_target.over_line} Chutes no Gol" 
+                                 data-odd="${match.stats.shots_on_target.over_odd}" 
+                                 data-conf="${match.stats.shots_on_target.over_conf}" 
+                                 data-avg="${match.stats.shots_on_target.avg}" 
+                                 data-margin="${match.stats.shots_on_target.margin}">
+                                <div class="bet-info">
+                                    <span>Over ${match.stats.shots_on_target.over_line}</span>
+                                    <span class="confidence ${match.stats.shots_on_target.over_conf >= 85 ? 'high' : 'medium'}">
+                                        ${match.stats.shots_on_target.over_conf >= 85 ? '✅' : '⚠️'} ${match.stats.shots_on_target.over_conf}%
+                                    </span>
+                                    <span class="bet-stats">Média: ${match.stats.shots_on_target.avg.toFixed(1)} | Margem: ${match.stats.shots_on_target.margin}</span>
+                                </div>
+                                <div class="odd">${match.stats.shots_on_target.over_odd}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${match.stats.cards && match.stats.cards.avg > 0 ? `
+                        <div class="bet-category">
+                            <h4>🟨 CARTÕES</h4>
+                            <div class="bet-option" onclick="addToTicket(this)" 
+                                 data-match="${match.home_team} vs ${match.away_team}" 
+                                 data-bet="Over ${match.stats.cards.over_line} Cartões" 
+                                 data-odd="${match.stats.cards.over_odd}" 
+                                 data-conf="${match.stats.cards.over_conf}" 
+                                 data-avg="${match.stats.cards.avg}" 
+                                 data-margin="${match.stats.cards.margin}">
+                                <div class="bet-info">
+                                    <span>Over ${match.stats.cards.over_line}</span>
+                                    <span class="confidence ${match.stats.cards.over_conf >= 85 ? 'high' : 'medium'}">
+                                        ${match.stats.cards.over_conf >= 85 ? '✅' : '⚠️'} ${match.stats.cards.over_conf}%
+                                    </span>
+                                    <span class="bet-stats">Média: ${match.stats.cards.avg.toFixed(1)} | Margem: ${match.stats.cards.margin}</span>
+                                </div>
+                                <div class="odd">${match.stats.cards.over_odd}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterMatches() {
+            displayMatches(allMatches);
+        }
 
         function addToTicket(element) {
             const match = element.dataset.match;
@@ -626,7 +801,6 @@
             const avg = element.dataset.avg;
             const margin = element.dataset.margin;
 
-            // Check if already in ticket
             const exists = ticket.find(item => item.match === match && item.bet === bet);
             if (exists) {
                 removeFromTicket(match, bet);
@@ -642,7 +816,6 @@
         function removeFromTicket(match, bet) {
             ticket = ticket.filter(item => !(item.match === match && item.bet === bet));
             
-            // Remove selected class
             const options = document.querySelectorAll('.bet-option');
             options.forEach(opt => {
                 if (opt.dataset.match === match && opt.dataset.bet === bet) {
@@ -681,7 +854,6 @@
                 </div>
             `).join('');
 
-            // Calculate totals
             const totalOdd = ticket.reduce((acc, item) => acc * item.odd, 1);
             const avgConf = Math.round(ticket.reduce((acc, item) => acc + item.conf, 0) / ticket.length);
             const stake = parseFloat(document.getElementById('stakeInput').value) || 100;
@@ -695,60 +867,4 @@
             ticketSummary.style.display = 'block';
         }
 
-        function clearTicket() {
-            ticket = [];
-            const options = document.querySelectorAll('.bet-option');
-            options.forEach(opt => opt.classList.remove('selected'));
-            updateTicketDisplay();
-        }
-
-        function createBet() {
-            if (ticket.length === 0) {
-                alert('Adicione pelo menos uma aposta!');
-                return;
-            }
-
-            const totalOdd = ticket.reduce((acc, item) => acc * item.odd, 1);
-            const avgConf = Math.round(ticket.reduce((acc, item) => acc + item.conf, 0) / ticket.length);
-            const stake = parseFloat(document.getElementById('stakeInput').value) || 100;
-            const returnValue = totalOdd * stake;
-
-            let betText = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-            betText += `🎫 BILHETE #${Date.now()}\n`;
-            betText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-            ticket.forEach((item, index) => {
-                betText += `${index + 1}. ${item.match}\n`;
-                betText += `   ${item.bet} [${item.odd}]\n`;
-                betText += `   ✅ ${item.conf}% | Média: ${item.avg} | Margem: ${item.margin}\n\n`;
-            });
-
-            betText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-            betText += `Odd Total: ${totalOdd.toFixed(2)}\n`;
-            betText += `Confiança: ${avgConf}%\n`;
-            betText += `Aposta: R$ ${stake.toFixed(2)}\n`;
-            betText += `Retorno: R$ ${returnValue.toFixed(2)}\n`;
-            betText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-            // Copy to clipboard
-            navigator.clipboard.writeText(betText).then(() => {
-                alert('✅ Bilhete copiado para a área de transferência!\n\nCole no seu grupo de apostas.');
-            });
-        }
-
-        // Update return value when stake changes
-        document.getElementById('stakeInput').addEventListener('input', updateTicketDisplay);
-
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const matchCards = document.querySelectorAll('.match-card');
-            
-            matchCards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
-            });
-        });
-    </script>
-</body>
-</html>
+        function clearTicket
