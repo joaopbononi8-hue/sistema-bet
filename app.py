@@ -814,126 +814,77 @@ def get_matches():
 @app.route('/api/update', methods=['POST'])
 @login_required
 def update_data():
-    """Atualiza dados da API - Últimos 30 dias + Próximos 7 dias"""
     try:
-        headers = {
-            'x-rapidapi-key': API_KEY,
-            'x-rapidapi-host': 'v3.football.api-sports.io'
-        }
-        
+        headers = {'x-rapidapi-key': API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         imported = 0
-        
-        # Data inicial: 30 dias atrás
         data_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-        # Data final: 7 dias à frente
         data_fim = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
-        
-        print(f"📅 Buscando jogos de {data_inicio} até {data_fim}")
-        
-        # Buscar jogos no intervalo (API-Football permite range de datas)
-        # Vamos buscar dia por dia para não ultrapassar limite de requisições
         data_atual = datetime.strptime(data_inicio, '%Y-%m-%d')
         data_final = datetime.strptime(data_fim, '%Y-%m-%d')
-        
         dias_processados = 0
-        max_dias = 10  # Limitar para não gastar todas as requisições
+        max_dias = 10
         
         while data_atual <= data_final and dias_processados < max_dias:
             data_str = data_atual.strftime('%Y-%m-%d')
-            
-            print(f"🔍 Buscando jogos de {data_str}...")
-            
-            response = requests.get(
-                f"{BASE_URL}/fixtures",
-                headers=headers,
-                params={'date': data_str},
-                timeout=10
-            )
-            
+            response = requests.get(f"{BASE_URL}/fixtures", headers=headers, params={'date': data_str}, timeout=10)
             data = response.json()
             
             if data.get('response'):
-                for jogo in data['response'][:5]:  # Limitar 5 jogos por dia
-            if jogo['fixture']['status']['short'] != 'FT':
-                continue
-            
-            time_casa = jogo['teams']['home']['name']
-            time_fora = jogo['teams']['away']['name']
-            liga = jogo['league']['name']
-            
-            cursor.execute('SELECT id FROM times WHERE nome = ?', (time_casa,))
-            result = cursor.fetchone()
-            if result:
-                time_casa_id = result[0]
-            else:
-                cursor.execute('INSERT INTO times (nome, liga, pais) VALUES (?, ?, ?)',
-                             (time_casa, liga, jogo['league']['country']))
-                time_casa_id = cursor.lastrowid
-            
-            cursor.execute('SELECT id FROM times WHERE nome = ?', (time_fora,))
-            result = cursor.fetchone()
-            if result:
-                time_fora_id = result[0]
-            else:
-                cursor.execute('INSERT INTO times (nome, liga, pais) VALUES (?, ?, ?)',
-                             (time_fora, liga, jogo['league']['country']))
-                time_fora_id = cursor.lastrowid
-            
-            cursor.execute('''
-                INSERT INTO jogos (time_casa_id, time_fora_id, data_jogo, placar_casa, placar_fora, liga, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'finalizado')
-            ''', (time_casa_id, time_fora_id, jogo['fixture']['date'],
-                  jogo['goals']['home'] or 0, jogo['goals']['away'] or 0, liga))
-            
-            jogo_id = cursor.lastrowid
-            
-            stats_resp = requests.get(
-                f"{BASE_URL}/fixtures/statistics",
-                headers=headers,
-                params={'fixture': jogo['fixture']['id']},
-                timeout=10
-            )
-            
-            stats_data = stats_resp.json()
-            
-            if stats_data.get('response'):
-                for team_stats in stats_data['response']:
-                    time_id = time_casa_id if team_stats['team']['name'] == time_casa else time_fora_id
+                for jogo in data['response'][:5]:
+                    status_jogo = jogo['fixture']['status']['short']
+                    if status_jogo not in ['FT', 'NS', '1H', '2H', 'HT']:
+                        continue
                     
-                    escanteios = 0
-                    cartoes = 0
-                    chutes = 0
-                    chutes_gol = 0
+                    time_casa = jogo['teams']['home']['name']
+                    time_fora = jogo['teams']['away']['name']
+                    liga = jogo['league']['name']
                     
-                    for stat in team_stats['statistics']:
-                        if stat['type'] == 'Corner Kicks' and stat['value']:
-                            escanteios = int(stat['value'])
-                        elif stat['type'] == 'Yellow Cards' and stat['value']:
-                            cartoes = int(stat['value'])
-                        elif stat['type'] == 'Total Shots' and stat['value']:
-                            chutes = int(stat['value'])
-                        elif stat['type'] == 'Shots on Goal' and stat['value']:
-                            chutes_gol = int(stat['value'])
+                    cursor.execute('SELECT id FROM times WHERE nome = ?', (time_casa,))
+                    result = cursor.fetchone()
+                    time_casa_id = result[0] if result else None
+                    if not time_casa_id:
+                        cursor.execute('INSERT INTO times (nome, liga, pais) VALUES (?, ?, ?)', (time_casa, liga, jogo['league']['country']))
+                        time_casa_id = cursor.lastrowid
                     
-                    cursor.execute('''
-                        INSERT INTO estatisticas (jogo_id, time_id, escanteios, chutes_total, 
-                                                chutes_no_gol, cartoes_amarelos)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (jogo_id, time_id, escanteios, chutes, chutes_gol, cartoes))
+                    cursor.execute('SELECT id FROM times WHERE nome = ?', (time_fora,))
+                    result = cursor.fetchone()
+                    time_fora_id = result[0] if result else None
+                    if not time_fora_id:
+                        cursor.execute('INSERT INTO times (nome, liga, pais) VALUES (?, ?, ?)', (time_fora, liga, jogo['league']['country']))
+                        time_fora_id = cursor.lastrowid
+                    
+                    status_bd = 'finalizado' if status_jogo == 'FT' else 'agendado'
+                    cursor.execute('INSERT INTO jogos (time_casa_id, time_fora_id, data_jogo, placar_casa, placar_fora, liga, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                                 (time_casa_id, time_fora_id, jogo['fixture']['date'], jogo['goals']['home'] or 0, jogo['goals']['away'] or 0, liga, status_bd))
+                    jogo_id = cursor.lastrowid
+                    
+                    if status_jogo == 'FT':
+                        stats_resp = requests.get(f"{BASE_URL}/fixtures/statistics", headers=headers, params={'fixture': jogo['fixture']['id']}, timeout=10)
+                        stats_data = stats_resp.json()
+                        if stats_data.get('response'):
+                            for team_stats in stats_data['response']:
+                                time_id = time_casa_id if team_stats['team']['name'] == time_casa else time_fora_id
+                                escanteios = cartoes = chutes = chutes_gol = 0
+                                for stat in team_stats['statistics']:
+                                    if stat['type'] == 'Corner Kicks' and stat['value']: escanteios = int(stat['value'])
+                                    elif stat['type'] == 'Yellow Cards' and stat['value']: cartoes = int(stat['value'])
+                                    elif stat['type'] == 'Total Shots' and stat['value']: chutes = int(stat['value'])
+                                    elif stat['type'] == 'Shots on Goal' and stat['value']: chutes_gol = int(stat['value'])
+                                cursor.execute('INSERT INTO estatisticas (jogo_id, time_id, escanteios, chutes_total, chutes_no_gol, cartoes_amarelos) VALUES (?, ?, ?, ?, ?, ?)',
+                                             (jogo_id, time_id, escanteios, chutes, chutes_gol, cartoes))
+                    imported += 1
             
-            imported += 1
+            data_atual += timedelta(days=1)
+            dias_processados += 1
         
         conn.commit()
         conn.close()
-        
-        return jsonify({'message': f'{imported} jogos importados com sucesso!', 'imported': imported})
-        
+        return jsonify({'message': f'{imported} jogos importados!', 'imported': imported})
     except Exception as e:
-        print(f"Erro: {e}")
         return jsonify({'error': str(e)}), 500
-
+        
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
