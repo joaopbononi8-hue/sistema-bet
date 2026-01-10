@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚽ Sistema de Apostas - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a7f37;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .update-info {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .btn-header {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-header:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-header.primary {
+            background: #fff;
+            color: #1a7f37;
+        }
+
+        .btn-header.primary:hover {
+            background: #f0f0f0;
+        }
+
+        .search-bar {
+            background: #2d2d2d;
+            padding: 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #444;
+            border-radius: 25px;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #1a7f37;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #1a7f37;
+        }
+
+        .loading.error {
+            color: #dc2626;
+        }
+
+        .loading-spinner {
+            border: 4px solid #444;
+            border-top: 4px solid #1a7f37;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .sidebar {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: #1a7f37;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .filter-group {
+            margin-bottom: 25px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+        .filter-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .filter-item label {
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .empty-state {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            color: #1a7f37;
+            margin-bottom: 20px;
+        }
+
+        .empty-state p {
+            color: #aaa;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .btn-large {
+            background: #1a7f37;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-large:hover {
+            background: #22a349;
+            transform: translateY(-2px);
+        }
+
+        .match-card {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #1a7f37;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+
+        .league-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .match-time {
+            background: #1a7f37;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .teams {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .bet-options {
+            display: grid;
+            gap: 15px;
+        }
+
+        .bet-category {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .bet-category h4 {
+            color: #1a7f37;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .bet-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #2d2d2d;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bet-option:hover {
+            background: #3d3d3d;
+            transform: translateX(5px);
+        }
+
+        .bet-option.selected {
+            background: #1a7f37;
+            border: 2px solid #22a349;
+        }
+
+        .bet-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .confidence {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .confidence.high {
+            background: #1a7f37;
+            color: #fff;
+        }
+
+        .confidence.medium {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .confidence.low {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .bet-stats {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .odd {
+            background: #444;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #1a7f37;
+        }
+
+        .ticket-panel {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .ticket-panel h3 {
+            color: #1a7f37;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ticket-item {
+            background: #1a1a1a;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 3px solid #1a7f37;
+        }
+
+        .ticket-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .remove-btn {
+            background: #dc2626;
+            border: none;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .ticket-item-bet {
+            font-size: 14px;
+            color: #1a7f37;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .ticket-item-stats {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .ticket-summary {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #444;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .summary-row.total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a7f37;
+        }
+
+        .stake-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #444;
+            border-radius: 5px;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-clear {
+            background: #444;
+            color: #fff;
+        }
+
+        .btn-clear:hover {
+            background: #555;
+        }
+
+        .btn-create {
+            background: #1a7f37;
+            color: #fff;
+            grid-column: 1 / -1;
+        }
+
+        .btn-create:hover {
+            background: #22a349;
+        }
+
+        .empty-ticket {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #1a7f37;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                grid-template-columns: 200px 1fr 300px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .ticket-panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-radius: 20px 20px 0 0;
+                max-height: 50vh;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚽ Sistema de Apostas Esportivas</h1>
+        <div class="header-buttons">
+            <div class="update-info" id="updateInfo">
+                Aguardando dados...
+            </div>
+            <button class="btn-header primary" onclick="updateData()">
+                🔄 Buscar Jogos Reais
+            </button>
+        </div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar time ou competição...">
+    </div>
+
+    <div class="container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="filter-group">
+                <h3>🏆 LIGAS</h3>
+                <div class="filter-item">
+                    <input type="checkbox" id="premier" checked onchange="filterMatches()">
+                    <label for="premier">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="brasileirao" checked onchange="filterMatches()">
+                    <label for="brasileirao">🇧🇷 Brasileirão</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="laliga" checked onchange="filterMatches()">
+                    <label for="laliga">🇪🇸 La Liga</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="bundesliga" checked onchange="filterMatches()">
+                    <label for="bundesliga">🇩🇪 Bundesliga</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="seriea" checked onchange="filterMatches()">
+                    <label for="seriea">🇮🇹 Serie A</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="ligue1" checked onchange="filterMatches()">
+                    <label for="ligue1">🇫🇷 Ligue 1</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content" id="matchesContainer">
+            <div class="empty-state">
+                <h2>🎯 Bem-vindo ao Sistema de Apostas!</h2>
+                <p>
+                    Para começar, clique no botão <strong>"Buscar Jogos Reais"</strong> acima.<br>
+                    O sistema vai importar jogos finalizados de hoje com estatísticas reais da API-Football.
+                </p>
+                <button class="btn-large" onclick="updateData()">
+                    🚀 Buscar Jogos Agora
+                </button>
+                <p style="margin-top: 20px; font-size: 14px;">
+                    💡 Você tem 100 requisições grátis por dia na API-Football<br>
+                    Cada atualização usa cerca de 10-20 requisições
+                </p>
+            </div>
+        </div>
+
+        <!-- TICKET PANEL -->
+        <div class="ticket-panel">
+            <h3>🎫 BOLETIM DE APOSTA</h3>
+            <div id="ticketItems">
+                <div class="empty-ticket">
+                    <p>Nenhuma aposta selecionada</p>
+                    <p style="font-size: 12px; margin-top: 10px;">Clique nas apostas para adicionar</p>
+                </div>
+            </div>
+
+            <div class="ticket-summary" id="ticketSummary" style="display: none;">
+                <div class="summary-row">
+                    <span>Apostas:</span>
+                    <span id="betCount">0</span>
+                </div>
+                <div class="summary-row total">
+                    <span>ODD TOTAL:</span>
+                    <span id="totalOdd">1.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Confiança Média:</span>
+                    <span id="avgConf">0%</span>
+                </div>
+
+                <input type="number" class="stake-input" id="stakeInput" placeholder="Valor da aposta (R$)" value="100">
+                
+                <div class="summary-row total" style="color: #22a349;">
+                    <span>RETORNO:</span>
+                    <span id="returnValue">R$ 0,00</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-clear" onclick="clearTicket()">🗑️ Limpar</button>
+                    <button class="btn btn-create" onclick="createBet()">🎯 CRIAR APOSTA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE LOADING -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <h2>🔄 Buscando Jogos...</h2>
+            <div class="loading-spinner"></div>
+            <p id="loadingMessage">Conectando com API-Football...</p>
+        </div>
+    </div>
+
+    <script>
+        let ticket = [];
+        let allMatches = [];
+
+        async function updateData() {
+            const modal = document.getElementById('loadingModal');
+            const message = document.getElementById('loadingMessage');
+            modal.classList.add('active');
+            
+            try {
+                message.textContent = 'Buscando jogos finalizados de hoje...';
+                
+                const response = await fetch('/api/update', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                message.textContent = `✅ ${data.imported} jogos importados!`;
+                
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                    loadMatches();
+                }, 2000);
+                
+            } catch (error) {
+                message.textContent = `❌ Erro: ${error.message}`;
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                }, 3000);
+                console.error('Erro:', error);
+            }
+        }
+
+        async function loadMatches() {
+            const container = document.getElementById('matchesContainer');
+            container.innerHTML = '<div class="loading">⚽ Carregando jogos do banco de dados...<div class="loading-spinner"></div></div>';
+
+            try {
+                const response = await fetch('/api/matches');
+                const matches = await response.json();
+                allMatches = matches;
+                
+                if (matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h2>📊 Nenhum jogo no banco ainda</h2>
+                            <p>Clique em "Buscar Jogos Reais" para importar dados da API-Football</p>
+                            <button class="btn-large" onclick="updateData()">
+                                🚀 Buscar Jogos Agora
+                            </button>
+                        </div>
+                    `;
+                    document.getElementById('updateInfo').textContent = 'Nenhum dado ainda';
+                    return;
+                }
+                
+                displayMatches(matches);
+                document.getElementById('updateInfo').textContent = `Última atualização: ${new Date().toLocaleTimeString('pt-BR')}`;
+                
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="loading error">
+                        ❌ Erro ao carregar jogos!<br>
+                        <button class="btn-large" onclick="loadMatches()" style="margin-top: 20px;">
+                            🔄 Tentar Novamente
+                        </button>
+                    </div>
+                `;
+                console.error('Erro:', error);
+            }
+        }
+
+        function displayMatches(matches) {
+            const container = document.getElementById('matchesContainer');
+            
+            container.innerHTML = matches.map(match => `
+                <div class="match-card" data-league="${match.league}">
+                    <div class="match-header">
+                        <div class="league-info">
+                            <span>${match.league}</span>
+                        </div>
+                        <div class="match-time">${match.time}</div>
+                    </div>
+                    <div class="teams">${match.home_team} vs ${match.away_team}</div>
+                    
+                    <div class="bet-options">
+                        ${match.stats.corners && match.stats.corners.avg > 0 ? `
+                        <div class="bet-category">
+                            <h4>🚩 ESCANTEIOS</h4>
+                            <div class="bet-option" onclick="addToTicket(this)" 
+                                 data-match="${match.home_team} vs ${match.away_team}" 
+                                 data-bet="Over ${match.stats.corners.over_line} Escanteios" 
+                                 data-odd="${match.stats.corners.over_odd}" 
+                                 data-conf="${match.stats.corners.over_conf}" 
+                                 data-avg="${match.stats.corners.avg}" 
+                                 data-margin="${(match.stats.corners.avg - match.stats.corners.over_line).toFixed(1)}">
+                                <div class="bet-info">
+                                    <span>Over ${match.stats.corners.over_line}</span>
+                                    <span class="confidence ${match.stats.corners.over_conf >= 85 ? 'high' : 'medium'}">
+                                        ${match.stats.corners.over_conf >= 85 ? '✅' : '⚠️'} ${match.stats.corners.over_conf}%
+                                    </span>
+                                    <span class="bet-stats">Média: ${match.stats.corners.avg.toFixed(1)} | Margem: ${(match.stats.corners.avg - match.stats.corners.over_line).toFixed(1)}</span>
+                                </div>
+                                <div class="odd">${match.stats.corners.over_odd}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${match.stats.shots_on_target && match.stats.shots_on_target.avg > 0 ? `
+                        <div class="bet-category">
+                            <h4>🎯 CHUTES NO GOL</h4>
+                            <div class="bet-option" onclick="addToTicket(this)" 
+                                 data-match="${match.home_team} vs ${match.away_team}" 
+                                 data-bet="Over ${match.stats.shots_on_target.over_line} Chutes no Gol" 
+                                 data-odd="${match.stats.shots_on_target.over_odd}" 
+                                 data-conf="${match.stats.shots_on_target.over_conf}" 
+                                 data-avg="${match.stats.shots_on_target.avg}" 
+                                 data-margin="${match.stats.shots_on_target.margin}">
+                                <div class="bet-info">
+                                    <span>Over ${match.stats.shots_on_target.over_line}</span>
+                                    <span class="confidence ${match.stats.shots_on_target.over_conf >= 85 ? 'high' : 'medium'}">
+                                        ${match.stats.shots_on_target.over_conf >= 85 ? '✅' : '⚠️'} ${match.stats.shots_on_target.over_conf}%
+                                    </span>
+                                    <span class="bet-stats">Média: ${match.stats.shots_on_target.avg.toFixed(1)} | Margem: ${match.stats.shots_on_target.margin}</span>
+                                </div>
+                                <div class="odd">${match.stats.shots_on_target.over_odd}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${match.stats.cards && match.stats.cards.avg > 0 ? `
+                        <div class="bet-category">
+                            <h4>🟨 CARTÕES</h4>
+                            <div class="bet-option" onclick="addToTicket(this)" 
+                                 data-match="${match.home_team} vs ${match.away_team}" 
+                                 data-bet="Over ${match.stats.cards.over_line} Cartões" 
+                                 data-odd="${match.stats.cards.over_odd}" 
+                                 data-conf="${match.stats.cards.over_conf}" 
+                                 data-avg="${match.stats.cards.avg}" 
+                                 data-margin="${match.stats.cards.margin}">
+                                <div class="bet-info">
+                                    <span>Over ${match.stats.cards.over_line}</span>
+                                    <span class="confidence ${match.stats.cards.over_conf >= 85 ? 'high' : 'medium'}">
+                                        ${match.stats.cards.over_conf >= 85 ? '✅' : '⚠️'} ${match.stats.cards.over_conf}%
+                                    </span>
+                                    <span class="bet-stats">Média: ${match.stats.cards.avg.toFixed(1)} | Margem: ${match.stats.cards.margin}</span>
+                                </div>
+                                <div class="odd">${match.stats.cards.over_odd}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterMatches() {
+            displayMatches(allMatches);
+        }
+
+        function addToTicket(element) {
+            const match = element.dataset.match;
+            const bet = element.dataset.bet;
+            const odd = parseFloat(element.dataset.odd);
+            const conf = parseInt(element.dataset.conf);
+            const avg = element.dataset.avg;
+            const margin = element.dataset.margin;
+
+            const exists = ticket.find(item => item.match === match && item.bet === bet);
+            if (exists) {
+                removeFromTicket(match, bet);
+                element.classList.remove('selected');
+                return;
+            }
+
+            ticket.push({ match, bet, odd, conf, avg, margin });
+            element.classList.add('selected');
+            updateTicketDisplay();
+        }
+
+        function removeFromTicket(match, bet) {
+            ticket = ticket.filter(item => !(item.match === match && item.bet === bet));
+            
+            const options = document.querySelectorAll('.bet-option');
+            options.forEach(opt => {
+                if (opt.dataset.match === match && opt.dataset.bet === bet) {
+                    opt.classList.remove('selected');
+                }
+            });
+            
+            updateTicketDisplay();
+        }
+
+        function updateTicketDisplay() {
+            const ticketItems = document.getElementById('ticketItems');
+            const ticketSummary = document.getElementById('ticketSummary');
+
+            if (ticket.length === 0) {
+                ticketItems.innerHTML = `
+                    <div class="empty-ticket">
+                        <p>Nenhuma aposta selecionada</p>
+                        <p style="font-size: 12px; margin-top: 10px;">Clique nas apostas para adicionar</p>
+                    </div>
+                `;
+                ticketSummary.style.display = 'none';
+                return;
+            }
+
+            ticketItems.innerHTML = ticket.map((item, index) => `
+                <div class="ticket-item">
+                    <div class="ticket-item-header">
+                        <span style="font-size: 12px; color: #aaa;">${index + 1}. ${item.match}</span>
+                        <button class="remove-btn" onclick="removeFromTicket('${item.match}', '${item.bet}')">X</button>
+                    </div>
+                    <div class="ticket-item-bet">${item.bet} [${item.odd}]</div>
+                    <div class="ticket-item-stats">
+                        ✅ Confiança: ${item.conf}% | Média: ${item.avg} | Margem: ${item.margin}
+                    </div>
+                </div>
+            `).join('');
+
+            const totalOdd = ticket.reduce((acc, item) => acc * item.odd, 1);
+            const avgConf = Math.round(ticket.reduce((acc, item) => acc + item.conf, 0) / ticket.length);
+            const stake = parseFloat(document.getElementById('stakeInput').value) || 100;
+            const returnValue = totalOdd * stake;
+
+            document.getElementById('betCount').textContent = ticket.length;
+            document.getElementById('totalOdd').textContent = totalOdd.toFixed(2);
+            document.getElementById('avgConf').textContent = avgConf + '%';
+            document.getElementById('returnValue').textContent = 'R$ ' + returnValue.toFixed(2);
+
+            ticketSummary.style.display = 'block';
+        }
+
+        function clearTicket
