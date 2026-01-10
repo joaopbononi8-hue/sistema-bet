@@ -1,80 +1,75 @@
-def api_request(endpoint, params=None):
-    """Função simples para consultar API-Football"""
-    headers = {"x-apisports-key": API_KEY}
-    url = f"{BASE_URL}/{endpoint}"
-    r = requests.get(url, headers=headers, params=params)
+from fastapi import FastAPI
+import requests
+from datetime import datetime, timedelta
+
+app = FastAPI()
+
+API_KEY = "0ef953667b0b3637e0d99c6444bfcb10"  # coloque a sua
+BASE_URL = "https://apiv3.apifootball.com"
+
+def fetch(endpoint: str):
+    url = f"{BASE_URL}/?APIkey={API_KEY}&{endpoint}"
+    r = requests.get(url, timeout=10)
     return r.json()
 
+# -------------------------------
+# FUNÇÃO PARA FORMATAR DATAS
+# -------------------------------
+def format_date(dt):
+    return dt.strftime("%Y-%m-%d")
 
-@app.route("/api/matches")
-@login_required
-def get_matches():
-    tipo = request.args.get("tipo", "proximos")
+# -------------------------------
+# HOME
+# -------------------------------
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "API rodando!"}
 
-    # ---- TIPOS DE CONSULTA ----
-    if tipo == "proximos":
-        data = api_request("fixtures", {"next": 20})
+# ----------------------------------------
+# PARTIDAS DE HOJE
+# ----------------------------------------
+@app.get("/matches/today")
+def today_matches():
+    today = datetime.now().strftime("%Y-%m-%d")
+    return fetch(f"action=get_events&from={today}&to={today}")
 
-    elif tipo == "destaque":
-        data = api_request("fixtures", {"next": 10})
+# ----------------------------------------
+# PARTIDAS DE AMANHÃ
+# ----------------------------------------
+@app.get("/matches/tomorrow")
+def tomorrow_matches():
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    return fetch(f"action=get_events&from={tomorrow}&to={tomorrow}")
 
-    elif tipo == "alta-prob":
-        data = api_request("fixtures", {"next": 30})
+# ---------------------------------------------------
+# PARTIDAS DA SEMANA ATUAL (SEGUNDA → DOMINGO)
+# ---------------------------------------------------
+@app.get("/matches/week")
+def week_matches():
+    today = datetime.now()
+    monday = today - timedelta(days=today.weekday())  
+    sunday = monday + timedelta(days=6)
 
-    else:
-        return jsonify([])
+    return fetch(f"action=get_events&from={format_date(monday)}&to={format_date(sunday)}")
 
-    jogos_api = data.get("response", [])
+# ---------------------------------------------------
+# PARTIDAS DA SEMANA PASSADA
+# ---------------------------------------------------
+@app.get("/matches/lastweek")
+def last_week_matches():
+    today = datetime.now()
+    monday_this = today - timedelta(days=today.weekday())
+    monday_last = monday_this - timedelta(days=7)
+    sunday_last = monday_this - timedelta(days=1)
 
-    jogos_formatados = []
-    for jogo in jogos_api:
-        fixture = jogo["fixture"]
-        league = jogo["league"]
-        teams = jogo["teams"]
+    return fetch(f"action=get_events&from={format_date(monday_last)}&to={format_date(sunday_last)}")
 
-        jogos_formatados.append({
-            "id": fixture["id"],
-            "league": league["name"],
-            "home_team": teams["home"]["name"],
-            "away_team": teams["away"]["name"],
-            "time": fixture["date"],
-            "stats": {
-                "corners": {
-                    "avg": 9.2,
-                    "over_line": 8.5,
-                    "over_conf": 87,
-                    "over_odd": 1.70,
-                },
-                "cards": {
-                    "avg": 4.3,
-                    "over_line": 3.5,
-                    "over_conf": 82,
-                    "over_odd": 1.65,
-                }
-            }
-        })
+# ----------------------------------------
+# PARTIDAS FUTURAS (7 DIAS À FRENTE)
+# ----------------------------------------
+@app.get("/matches/next")
+def next_matches():
+    today = datetime.now()
+    future = today + timedelta(days=7)
 
-    return jsonify(jogos_formatados)
-
-
-
-@app.route("/api/update")
-@login_required
-def update_data():
-    """Força atualização (aqui só retorna OK, você pode expandir)"""
-    return jsonify({"status": "ok", "message": "Dados atualizados"})
-
-
-@app.route("/api/acertos")
-@login_required
-def get_acertos():
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT tipo_aposta, odd, confianca, resultado, data_sugestao
-        FROM apostas_sugeridas
-        WHERE resultado = 'certo'
-        ORDER BY data_sugestao DESC
-        LIMIT 50
-    """)
+    return fetch(f"action=get_events&from={format_date(today)}&to={format_date(future)}")
