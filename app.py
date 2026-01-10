@@ -8,12 +8,9 @@ from functools import wraps
 app = Flask(__name__)
 app.secret_key = 'sua-chave-secreta-super-segura-123'
 
-# Configuração
 DATABASE = 'futebol.db'
 API_KEY = '0ef953667b0b3637e0d99c6444bfcb10'
 BASE_URL = "https://v3.football.api-sports.io"
-
-# Credenciais
 ADMIN_USER = 'admin'
 ADMIN_PASS = '123456'
 
