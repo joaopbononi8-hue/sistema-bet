@@ -182,7 +182,7 @@ LOGIN_HTML = """
         <div class="error">{{ error }}</div>
         {% endif %}
         
-        <form method="POST">
+        <form method="POST" action="/login">
             <div class="form-group">
                 <label>Usuário</label>
                 <input type="text" name="username" placeholder="Digite seu usuário" required autofocus>
