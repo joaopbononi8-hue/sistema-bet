@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 import requests
 from functools import wraps
+import time
 
 app = Flask(__name__)
 app.secret_key = 'sua-chave-secreta-super-segura-123'
@@ -22,7 +23,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS times (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
+            nome TEXT NOT NULL UNIQUE,
             liga TEXT,
             pais TEXT
         )
@@ -31,6 +32,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS jogos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fixture_id INTEGER UNIQUE,
             time_casa_id INTEGER,
             time_fora_id INTEGER,
             data_jogo DATETIME,
@@ -247,6 +249,10 @@ DASHBOARD_HTML = """
         .btn-update:hover {
             background: #f0f0f0;
         }
+        .btn-update:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
         .btn-logout {
             background: rgba(255,255,255,0.2);
             color: white;
@@ -444,6 +450,29 @@ DASHBOARD_HTML = """
         .tab-content.active {
             display: block;
         }
+
+        /* Alert */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -459,7 +488,7 @@ DASHBOARD_HTML = """
     <div class="header">
         <h1>⚽ Sistema de Apostas - Dashboard</h1>
         <div class="header-actions">
-            <button class="btn btn-update" onclick="updateData()">🔄 Atualizar Dados</button>
+            <button class="btn btn-update" id="btnUpdate" onclick="updateData()">🔄 Atualizar Dados</button>
             <button class="btn btn-logout" onclick="logout()">🚪 Sair</button>
         </div>
     </div>
@@ -475,18 +504,14 @@ DASHBOARD_HTML = """
             <div class="nav-item" onclick="showTab('alta-prob')">
                 🎯 Alta Probabilidade
             </div>
-            <div class="nav-item" onclick="showTab('acertos')">
-                ✅ Análises Certas
-            </div>
-            <div class="nav-item" onclick="showTab('erros')">
-                ❌ Análises Erradas
-            </div>
             <div class="nav-item" onclick="showTab('stats')">
                 📊 Estatísticas
             </div>
         </div>
         
         <div class="main-content">
+            <div id="alertContainer"></div>
+            
             <!-- Tab: Jogos em Destaque -->
             <div id="tab-destaque" class="tab-content active">
                 <div class="stats-grid">
@@ -495,16 +520,16 @@ DASHBOARD_HTML = """
                         <div class="value" id="total-jogos">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Sugestões Hoje</h3>
-                        <div class="value" id="sugestoes-hoje">0</div>
+                        <h3>Jogos Finalizados</h3>
+                        <div class="value" id="jogos-finalizados">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Taxa de Acerto</h3>
-                        <div class="value" id="taxa-acerto">0%</div>
+                        <h3>Estatísticas Registradas</h3>
+                        <div class="value" id="stats-registradas">0</div>
                     </div>
                 </div>
                 
-                <h2 style="margin-bottom: 20px;">🔥 Jogos em Destaque</h2>
+                <h2 style="margin-bottom: 20px;">🔥 Jogos Recentes</h2>
                 <div id="matches-destaque"></div>
             </div>
             
@@ -520,37 +545,25 @@ DASHBOARD_HTML = """
                 <div id="matches-alta-prob"></div>
             </div>
             
-            <!-- Tab: Acertos -->
-            <div id="tab-acertos" class="tab-content">
-                <h2 style="margin-bottom: 20px;">✅ Análises que Bateram</h2>
-                <div id="acertos-list"></div>
-            </div>
-            
-            <!-- Tab: Erros -->
-            <div id="tab-erros" class="tab-content">
-                <h2 style="margin-bottom: 20px;">❌ Análises que Não Bateram</h2>
-                <div id="erros-list"></div>
-            </div>
-            
             <!-- Tab: Estatísticas -->
             <div id="tab-stats" class="tab-content">
                 <h2 style="margin-bottom: 20px;">📊 Estatísticas Gerais</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>Total de Apostas Sugeridas</h3>
-                        <div class="value" id="total-apostas">0</div>
+                        <h3>Total de Times</h3>
+                        <div class="value" id="total-times">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Apostas Certas</h3>
-                        <div class="value" style="color: #28a745;" id="apostas-certas">0</div>
+                        <h3>Total de Jogos</h3>
+                        <div class="value" id="total-jogos-stats">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Apostas Erradas</h3>
-                        <div class="value" style="color: #dc3545;" id="apostas-erradas">0</div>
+                        <h3>Jogos com Estatísticas</h3>
+                        <div class="value" id="jogos-com-stats">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Taxa de Acerto Geral</h3>
-                        <div class="value" id="taxa-geral">0%</div>
+                        <h3>Última Atualização</h3>
+                        <div class="value" style="font-size: 18px;" id="ultima-atualizacao">-</div>
                     </div>
                 </div>
             </div>
@@ -558,8 +571,19 @@ DASHBOARD_HTML = """
     </div>
     
     <script>
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
         function showTab(tabName) {
-            // Remove active de todos
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -567,25 +591,20 @@ DASHBOARD_HTML = """
                 content.classList.remove('active');
             });
             
-            // Adiciona active no clicado
             event.target.classList.add('active');
             document.getElementById('tab-' + tabName).classList.add('active');
             
-            // Carrega dados específicos da aba
             loadTabData(tabName);
         }
         
         function loadTabData(tabName) {
             if (tabName === 'destaque') {
                 loadMatches('destaque');
+                loadStats();
             } else if (tabName === 'proximos') {
                 loadMatches('proximos');
             } else if (tabName === 'alta-prob') {
                 loadMatches('alta-prob');
-            } else if (tabName === 'acertos') {
-                loadAcertos();
-            } else if (tabName === 'erros') {
-                loadErros();
             } else if (tabName === 'stats') {
                 loadStats();
             }
@@ -594,7 +613,7 @@ DASHBOARD_HTML = """
         async function loadMatches(tipo) {
             const containerId = 'matches-' + tipo;
             const container = document.getElementById(containerId);
-            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Carregando...</p></div>';
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Carregando jogos...</p></div>';
             
             try {
                 const response = await fetch('/api/matches?tipo=' + tipo);
@@ -604,7 +623,10 @@ DASHBOARD_HTML = """
                     container.innerHTML = `
                         <div class="empty-state">
                             <h2>Nenhum jogo encontrado</h2>
-                            <p>Clique em "Atualizar Dados" para buscar jogos</p>
+                            <p>Clique em "Atualizar Dados" para buscar jogos da API</p>
+                            <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                                Isso pode acontecer se não houver jogos hoje ou se for necessário atualizar os dados
+                            </p>
                         </div>
                     `;
                     return;
@@ -650,6 +672,22 @@ DASHBOARD_HTML = """
                                     <div class="odd-badge">${match.stats.cards.over_odd}</div>
                                 </div>
                             ` : ''}
+                            ${match.stats.shots ? `
+                                <div class="bet-option">
+                                    <div class="bet-info">
+                                        <div class="bet-type">
+                                            🎯 Chutes no Gol: Over ${match.stats.shots.over_line}
+                                            <span class="confidence ${match.stats.shots.over_conf >= 85 ? 'high' : 'medium'}">
+                                                ${match.stats.shots.over_conf}%
+                                            </span>
+                                        </div>
+                                        <div class="bet-stats">
+                                            Média: ${match.stats.shots.avg.toFixed(1)} | Margem: ${(match.stats.shots.avg - match.stats.shots.over_line).toFixed(1)}
+                                        </div>
+                                    </div>
+                                    <div class="odd-badge">${match.stats.shots.over_odd}</div>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 `).join('');
@@ -658,32 +696,57 @@ DASHBOARD_HTML = """
                 document.getElementById('total-jogos').textContent = data.length;
                 
             } catch (error) {
-                container.innerHTML = `<div class="empty-state"><h2>Erro ao carregar</h2><p>${error.message}</p></div>`;
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>❌ Erro ao carregar</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
             }
         }
         
-        async function loadAcertos() {
-            document.getElementById('acertos-list').innerHTML = '<div class="empty-state"><p>Em desenvolvimento...</p></div>';
-        }
-        
-        async function loadErros() {
-            document.getElementById('erros-list').innerHTML = '<div class="empty-state"><p>Em desenvolvimento...</p></div>';
-        }
-        
         async function loadStats() {
-            // Stats já carregadas
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-jogos').textContent = data.total_jogos || 0;
+                document.getElementById('jogos-finalizados').textContent = data.jogos_finalizados || 0;
+                document.getElementById('stats-registradas').textContent = data.stats_count || 0;
+                document.getElementById('total-times').textContent = data.total_times || 0;
+                document.getElementById('total-jogos-stats').textContent = data.total_jogos || 0;
+                document.getElementById('jogos-com-stats').textContent = data.jogos_com_stats || 0;
+                document.getElementById('ultima-atualizacao').textContent = data.ultima_atualizacao || 'Nunca';
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
         }
         
         async function updateData() {
-            if (!confirm('Isso vai buscar novos jogos da API-Football. Continuar?')) return;
+            const btn = document.getElementById('btnUpdate');
+            btn.disabled = true;
+            btn.textContent = '⏳ Atualizando...';
             
             try {
+                showAlert('🔄 Buscando jogos da API-Football... Isso pode levar alguns minutos.', 'info');
+                
                 const response = await fetch('/api/update', { method: 'POST' });
                 const data = await response.json();
-                alert(data.message || 'Dados atualizados!');
-                loadMatches('destaque');
+                
+                btn.disabled = false;
+                btn.textContent = '🔄 Atualizar Dados';
+                
+                if (data.error) {
+                    showAlert('❌ Erro: ' + data.error, 'error');
+                } else {
+                    showAlert('✅ ' + data.message, 'success');
+                    loadMatches('destaque');
+                    loadStats();
+                }
             } catch (error) {
-                alert('Erro: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '🔄 Atualizar Dados';
+                showAlert('❌ Erro de conexão: ' + error.message, 'error');
             }
         }
         
@@ -695,6 +758,7 @@ DASHBOARD_HTML = """
         
         // Carregar ao iniciar
         loadMatches('destaque');
+        loadStats();
     </script>
 </body>
 </html>
@@ -733,156 +797,46 @@ def dashboard():
     """Dashboard principal"""
     return render_template_string(DASHBOARD_HTML)
 
-@app.route('/api/matches')
+@app.route('/api/stats')
 @login_required
-def get_matches():
-    """Retorna jogos do banco"""
-    tipo = request.args.get('tipo', 'destaque')
-    
+def get_stats():
+    """Retorna estatísticas gerais"""
     try:
         conn = sqlite3.connect(DATABASE)
-        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        cursor.execute('''
-            SELECT DISTINCT j.id, j.*, t1.nome as time_casa, t2.nome as time_fora
-            FROM jogos j
-            JOIN times t1 ON j.time_casa_id = t1.id
-            JOIN times t2 ON j.time_fora_id = t2.id
-            ORDER BY j.data_jogo DESC
-            LIMIT 50
-        ''')
+        # Total de times
+        cursor.execute('SELECT COUNT(*) FROM times')
+        total_times = cursor.fetchone()[0]
         
-        jogos = cursor.fetchall()
-        matches_data = []
+        # Total de jogos
+        cursor.execute('SELECT COUNT(*) FROM jogos')
+        total_jogos = cursor.fetchone()[0]
         
-        for jogo in jogos:
-            jogo_id = jogo['id']
-            time_casa_id = jogo['time_casa_id']
-            time_fora_id = jogo['time_fora_id']
-            
-            cursor.execute('''
-                SELECT AVG(escanteios) as media_escanteios,
-                       AVG(cartoes_amarelos) as media_amarelos
-                FROM estatisticas
-                WHERE time_id IN (?, ?)
-            ''', (time_casa_id, time_fora_id))
-            
-            medias = cursor.fetchone()
-            
-            if medias and medias['media_escanteios']:
-                media_escanteios = medias['media_escanteios']
-                media_amarelos = medias['media_amarelos']
-                conf_escanteios = min(92, int(media_escanteios * 8))
-                conf_cartoes = min(88, int(media_amarelos * 12))
-                
-                # Filtro por tipo
-                if tipo == 'alta-prob' and conf_escanteios < 85 and conf_cartoes < 85:
-                    continue
-                
-                matches_data.append({
-                    'league': jogo['liga'] or 'Liga',
-                    'home_team': jogo['time_casa'],
-                    'away_team': jogo['time_fora'],
-                    'time': str(jogo['data_jogo'])[:10] if jogo['data_jogo'] else '',
-                    'stats': {
-                        'corners': {
-                            'avg': media_escanteios,
-                            'over_line': round(max(0.5, media_escanteios - 2), 1),
-                            'over_odd': round(1.6 + (media_escanteios / 10), 2),
-                            'over_conf': conf_escanteios
-                        },
-                        'cards': {
-                            'avg': media_amarelos,
-                            'over_line': round(max(0.5, media_amarelos - 1), 1),
-                            'over_odd': round(1.7 + (media_amarelos / 10), 2),
-                            'over_conf': conf_cartoes
-                        }
-                    }
-                })
+        # Jogos finalizados
+        cursor.execute("SELECT COUNT(*) FROM jogos WHERE status = 'finalizado'")
+        jogos_finalizados = cursor.fetchone()[0]
+        
+        # Total de estatísticas
+        cursor.execute('SELECT COUNT(*) FROM estatisticas')
+        stats_count = cursor.fetchone()[0]
+        
+        # Jogos com estatísticas
+        cursor.execute('SELECT COUNT(DISTINCT jogo_id) FROM estatisticas')
+        jogos_com_stats = cursor.fetchone()[0]
+        
+        # Última atualização
+        cursor.execute('SELECT MAX(data_jogo) FROM jogos')
+        ultima = cursor.fetchone()[0]
         
         conn.close()
-        return jsonify(matches_data)
         
-    except Exception as e:
-        print(f"Erro: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/update', methods=['POST'])
-@login_required
-def update_data():
-    try:
-        headers = {'x-rapidapi-key': API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        imported = 0
-        data_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-        data_fim = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
-        data_atual = datetime.strptime(data_inicio, '%Y-%m-%d')
-        data_final = datetime.strptime(data_fim, '%Y-%m-%d')
-        dias_processados = 0
-        max_dias = 10
+        return jsonify({
+            'total_times': total_times,
+            'total_jogos': total_jogos,
+            'jogos_finalizados': jogos_finalizados,
+            'stats_count': stats_count,
+            'jogos_com_stats': jogos_com_stats,
+            'ultima_atualizacao': ultima[:10] if ultima else 'Nunca'
+        })
         
-        while data_atual <= data_final and dias_processados < max_dias:
-            data_str = data_atual.strftime('%Y-%m-%d')
-            response = requests.get(f"{BASE_URL}/fixtures", headers=headers, params={'date': data_str}, timeout=10)
-            data = response.json()
-            
-            if data.get('response'):
-                for jogo in data['response'][:5]:
-                    status_jogo = jogo['fixture']['status']['short']
-                    if status_jogo not in ['FT', 'NS', '1H', '2H', 'HT']:
-                        continue
-                    
-                    time_casa = jogo['teams']['home']['name']
-                    time_fora = jogo['teams']['away']['name']
-                    liga = jogo['league']['name']
-                    
-                    cursor.execute('SELECT id FROM times WHERE nome = ?', (time_casa,))
-                    result = cursor.fetchone()
-                    time_casa_id = result[0] if result else None
-                    if not time_casa_id:
-                        cursor.execute('INSERT INTO times (nome, liga, pais) VALUES (?, ?, ?)', (time_casa, liga, jogo['league']['country']))
-                        time_casa_id = cursor.lastrowid
-                    
-                    cursor.execute('SELECT id FROM times WHERE nome = ?', (time_fora,))
-                    result = cursor.fetchone()
-                    time_fora_id = result[0] if result else None
-                    if not time_fora_id:
-                        cursor.execute('INSERT INTO times (nome, liga, pais) VALUES (?, ?, ?)', (time_fora, liga, jogo['league']['country']))
-                        time_fora_id = cursor.lastrowid
-                    
-                    status_bd = 'finalizado' if status_jogo == 'FT' else 'agendado'
-                    cursor.execute('INSERT INTO jogos (time_casa_id, time_fora_id, data_jogo, placar_casa, placar_fora, liga, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                                 (time_casa_id, time_fora_id, jogo['fixture']['date'], jogo['goals']['home'] or 0, jogo['goals']['away'] or 0, liga, status_bd))
-                    jogo_id = cursor.lastrowid
-                    
-                    if status_jogo == 'FT':
-                        stats_resp = requests.get(f"{BASE_URL}/fixtures/statistics", headers=headers, params={'fixture': jogo['fixture']['id']}, timeout=10)
-                        stats_data = stats_resp.json()
-                        if stats_data.get('response'):
-                            for team_stats in stats_data['response']:
-                                time_id = time_casa_id if team_stats['team']['name'] == time_casa else time_fora_id
-                                escanteios = cartoes = chutes = chutes_gol = 0
-                                for stat in team_stats['statistics']:
-                                    if stat['type'] == 'Corner Kicks' and stat['value']: escanteios = int(stat['value'])
-                                    elif stat['type'] == 'Yellow Cards' and stat['value']: cartoes = int(stat['value'])
-                                    elif stat['type'] == 'Total Shots' and stat['value']: chutes = int(stat['value'])
-                                    elif stat['type'] == 'Shots on Goal' and stat['value']: chutes_gol = int(stat['value'])
-                                cursor.execute('INSERT INTO estatisticas (jogo_id, time_id, escanteios, chutes_total, chutes_no_gol, cartoes_amarelos) VALUES (?, ?, ?, ?, ?, ?)',
-                                             (jogo_id, time_id, escanteios, chutes, chutes_gol, cartoes))
-                    imported += 1
-            
-            data_atual += timedelta(days=1)
-            dias_processados += 1
-        
-        conn.commit()
-        conn.close()
-        return jsonify({'message': f'{imported} jogos importados!', 'imported': imported})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-        
-if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
